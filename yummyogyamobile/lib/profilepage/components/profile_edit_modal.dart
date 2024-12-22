@@ -3,7 +3,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mime/mime.dart';
+import 'package:path/path.dart' as path;
 
 class ProfileEditModal extends StatefulWidget {
   final String baseUrl;
@@ -45,58 +48,64 @@ class ProfileEditModalState extends State<ProfileEditModal> {
     }
   }
 
-  Future<void> _handleResponse(http.Response response) async {
-    try {
-      final responseData = jsonDecode(response.body);
-      final success = responseData['success'] ?? false;
-      final message = responseData['message'] ?? 'Unknown error occurred';
-
-      if (mounted) {
-        if (success) {
-          _showSnackbar(message, Colors.green);
-          Navigator.pop(context, true);
-        } else {
-          _showSnackbar(message, Colors.red);
-        }
-      }
-    } catch (e) {
-      debugPrint('Error during response handling: $e');
-      _showSnackbar('Invalid response from server', Colors.red);
-    }
-  }
-
   Future<void> _updateProfile() async {
-    try {
-      setState(() {
-        _isSubmitting = true;
-      });
+    if (_isSubmitting) return;
 
-      final uri = Uri.parse('${widget.baseUrl}/profilepage/profile/update/api');
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      final uri =
+          Uri.parse('${widget.baseUrl}/profilepage/profile/update/api/');
       final request = http.MultipartRequest('POST', uri);
 
       request.fields['username'] = widget.username;
       request.fields['bio'] = _bioController.text;
 
       if (_selectedPhoto != null) {
+        final mimeType = lookupMimeType(_selectedPhoto!.path) ?? 'image/jpeg';
+        final fileName = path.basename(_selectedPhoto!.path);
         request.files.add(await http.MultipartFile.fromPath(
           'profile_photo',
           _selectedPhoto!.path,
+          filename: fileName,
+          contentType: MediaType.parse(mimeType),
         ));
       }
 
-      request.headers.addAll({
-        'Accept': 'application/json',
-      });
+      request.headers.addAll({'Accept': 'application/json'});
 
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
-      debugPrint('Response Status Code: ${response.statusCode}');
-      debugPrint('Response Body: ${response.body}');
+      if (response.statusCode != 200) {
+        _showSnackbar('Failed to update profile', Colors.red);
+        return;
+      }
 
-      await _handleResponse(response);
-    } catch (e) {
-      _showSnackbar('An error occurred: $e', Colors.red);
+      final responseData = jsonDecode(response.body);
+      final success = responseData['success'] ?? false;
+      final message = responseData['message'] ?? 'Unknown error occurred';
+
+      if (success) {
+        _showSnackbar(message, Colors.green);
+        if (mounted) {
+          Navigator.pop(context, true);
+        }
+      } else {
+        if (responseData.containsKey('errors')) {
+          String errorMessages = responseData['errors']
+              .values
+              .map((errorList) => errorList.join(', '))
+              .join('\n');
+          _showSnackbar(errorMessages, Colors.red);
+        } else {
+          _showSnackbar(message, Colors.red);
+        }
+      }
+    } catch (_) {
+      _showSnackbar('An error occurred. Please try again.', Colors.red);
     } finally {
       setState(() {
         _isSubmitting = false;
@@ -105,30 +114,52 @@ class ProfileEditModalState extends State<ProfileEditModal> {
   }
 
   Future<void> _removePhoto() async {
-    try {
-      setState(() {
-        _isSubmitting = true;
-      });
+    if (_isSubmitting) return;
 
-      final uri = Uri.parse('${widget.baseUrl}/profilepage/profile/update/api');
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      final uri =
+          Uri.parse('${widget.baseUrl}/profilepage/profile/update/api/');
       final request = http.MultipartRequest('POST', uri);
 
       request.fields['username'] = widget.username;
       request.fields['delete_photo'] = 'true';
 
-      request.headers.addAll({
-        'Accept': 'application/json',
-      });
+      request.headers.addAll({'Accept': 'application/json'});
 
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
-      debugPrint('Response Status Code: ${response.statusCode}');
-      debugPrint('Response Body: ${response.body}');
+      if (response.statusCode != 200) {
+        _showSnackbar('Failed to remove photo', Colors.red);
+        return;
+      }
 
-      await _handleResponse(response);
-    } catch (e) {
-      _showSnackbar('An error occurred: $e', Colors.red);
+      final responseData = jsonDecode(response.body);
+      final success = responseData['success'] ?? false;
+      final message = responseData['message'] ?? 'Unknown error occurred';
+
+      if (success) {
+        _showSnackbar(message, Colors.green);
+        setState(() {
+          _selectedPhoto = null;
+        });
+      } else {
+        if (responseData.containsKey('errors')) {
+          String errorMessages = responseData['errors']
+              .values
+              .map((errorList) => errorList.join(', '))
+              .join('\n');
+          _showSnackbar(errorMessages, Colors.red);
+        } else {
+          _showSnackbar(message, Colors.red);
+        }
+      }
+    } catch (_) {
+      _showSnackbar('An error occurred. Please try again.', Colors.red);
     } finally {
       setState(() {
         _isSubmitting = false;
@@ -140,10 +171,7 @@ class ProfileEditModalState extends State<ProfileEditModal> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            message,
-            style: const TextStyle(color: Colors.white),
-          ),
+          content: Text(message, style: const TextStyle(color: Colors.white)),
           backgroundColor: color,
         ),
       );
@@ -179,10 +207,12 @@ class ProfileEditModalState extends State<ProfileEditModal> {
                 backgroundImage: _selectedPhoto != null
                     ? FileImage(_selectedPhoto!) as ImageProvider
                     : (widget.currentProfilePhoto.isNotEmpty
-                    ? NetworkImage('${widget.baseUrl}${widget.currentProfilePhoto}')
-                    : null),
+                        ? NetworkImage(
+                            '${widget.baseUrl}${widget.currentProfilePhoto}')
+                        : null),
                 backgroundColor: Colors.grey[300],
-                child: (_selectedPhoto == null && widget.currentProfilePhoto.isEmpty)
+                child: (_selectedPhoto == null &&
+                        widget.currentProfilePhoto.isEmpty)
                     ? const Icon(Icons.person, size: 50, color: Colors.white)
                     : null,
               ),
@@ -195,26 +225,34 @@ class ProfileEditModalState extends State<ProfileEditModal> {
               ElevatedButton.icon(
                 onPressed: _pickPhoto,
                 icon: const Icon(Icons.photo_library, color: Colors.white),
-                label: const Text('Pilih Foto'),
+                label: const Text(
+                  'Pilih Foto',
+                  style: TextStyle(color: Colors.white),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 ),
               ),
               const SizedBox(width: 16),
               ElevatedButton.icon(
                 onPressed: _isSubmitting ? null : _removePhoto,
                 icon: const Icon(Icons.delete, color: Colors.white),
-                label: const Text('Hapus Foto'),
+                label: const Text(
+                  'Hapus Foto',
+                  style: TextStyle(color: Colors.white),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.redAccent,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 ),
               ),
             ],
@@ -237,42 +275,34 @@ class ProfileEditModalState extends State<ProfileEditModal> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Colors.orange),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Colors.deepOrange),
-              ),
             ),
           ),
           const SizedBox(height: 24),
           _isSubmitting
               ? const Center(child: CircularProgressIndicator())
               : ElevatedButton(
-            onPressed: _updateProfile,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.deepOrange,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              padding: const EdgeInsets.symmetric(
-                vertical: 12,
-                horizontal: 24,
-              ),
-            ),
-            child: const Center(
-              child: Text(
-                'Simpan Perubahan',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: Colors.white,
+                  onPressed: _updateProfile,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepOrange,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 24,
+                    ),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'Simpan Perubahan',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          ),
         ],
       ),
     );

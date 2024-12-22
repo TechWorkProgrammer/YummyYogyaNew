@@ -5,11 +5,13 @@ import 'package:yummyogya_mobile/profilepage/components/profile_edit_modal.dart'
 class ProfileHeader extends StatelessWidget {
   final Map<String, dynamic> profileData;
   final String baseUrl;
+  final Function onProfileUpdated;
 
   const ProfileHeader({
     super.key,
     required this.profileData,
     required this.baseUrl,
+    required this.onProfileUpdated,
   });
 
   void _openEditProfileModal(BuildContext currentContext) async {
@@ -29,6 +31,7 @@ class ProfileHeader extends StatelessWidget {
         ScaffoldMessenger.of(currentContext).showSnackBar(
           const SnackBar(content: Text('Profil berhasil diperbarui!')),
         );
+        onProfileUpdated();
       }
     }
   }
@@ -61,7 +64,11 @@ class ProfileHeader extends StatelessWidget {
           radius: 50,
           backgroundImage: profileData['profile_photo'] != null
               ? NetworkImage('$baseUrl${profileData['profile_photo']}')
-              : const AssetImage('assets/placeholder.png') as ImageProvider,
+              : null,
+          backgroundColor: Colors.grey[300],
+          child: profileData['profile_photo'] == null
+              ? const Icon(Icons.person, size: 50, color: Colors.white)
+              : null,
         ),
         const SizedBox(height: 16),
         Text(

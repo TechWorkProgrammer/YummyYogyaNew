@@ -65,10 +65,10 @@ class ProfileScreenState extends State<ProfileScreen> {
 
   void _navigateToPage(int index) {
     final routes = [
-      () => Navigator.pushNamed(context, '/home'),
-      () => Navigator.pushNamed(context, '/search'),
-      () => Navigator.pushNamed(context, '/wishlist'),
-      () => Navigator.pushNamed(context, '/profile'),
+          () => Navigator.pushNamed(context, '/home'),
+          () => Navigator.pushNamed(context, '/search'),
+          () => Navigator.pushNamed(context, '/wishlist'),
+          () => Navigator.pushNamed(context, '/profile'),
     ];
 
     if (index != _currentIndex) {
@@ -94,30 +94,41 @@ class ProfileScreenState extends State<ProfileScreen> {
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator(color: Colors.orange))
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ProfileHeader(profileData: profileData, baseUrl: baseUrl),
-                  const SizedBox(height: 16),
-                  WishlistList(wishlist: profileData['wishlist'] ?? [], username: profileData['username']),
-                  const SizedBox(height: 16),
-                  ReviewList(
-                    username: profileData['username'],
-                    reviews: profileData['reviews'] ?? [],
-                    searchQuery: searchQuery,
-                    filter: filter,
-                    onSearchChanged: (value) => setState(() {
-                      searchQuery = value;
-                    }),
-                    onFilterChanged: (value) => setState(() {
-                      filter = value ?? 'all';
-                    }),
-                  ),
-                ],
+          : RefreshIndicator(
+        onRefresh: fetchProfileData,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ProfileHeader(
+                profileData: profileData,
+                baseUrl: baseUrl,
+                onProfileUpdated: fetchProfileData,
               ),
-            ),
+              const SizedBox(height: 16),
+              WishlistList(
+                wishlist: profileData['wishlist'] ?? [],
+                username: profileData['username'],
+              ),
+              const SizedBox(height: 16),
+              ReviewList(
+                username: profileData['username'],
+                reviews: profileData['reviews'] ?? [],
+                searchQuery: searchQuery,
+                filter: filter,
+                onSearchChanged: (value) => setState(() {
+                  searchQuery = value;
+                }),
+                onFilterChanged: (value) => setState(() {
+                  filter = value ?? 'all';
+                }),
+              ),
+            ],
+          ),
+        ),
+      ),
       bottomNavigationBar: BottomNav(
         currentIndex: _currentIndex,
         onTap: (index) => _navigateToPage(index),
