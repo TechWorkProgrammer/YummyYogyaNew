@@ -7,7 +7,7 @@ import 'package:yummyogya_mobile/screens/login.dart';
 import 'package:yummyogya_mobile/screens/menu.dart';
 import 'package:yummyogya_mobile/screens/search.dart';
 import 'package:yummyogya_mobile/wishlist/screens/wishlist_screens.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Import shared_preferences
+import 'package:shared_preferences/shared_preferences.dart'; 
 import 'package:yummyogya_mobile/profilepage/screens/profile_screen.dart';
 
 void main() {
@@ -22,6 +22,7 @@ class MyApp extends StatelessWidget {
     return Provider(
       create: (_) => CookieRequest(),
       child: MaterialApp(
+        debugShowCheckedModeBanner: false,
         title: 'Yummyogya',
         theme: ThemeData(
           useMaterial3: true,

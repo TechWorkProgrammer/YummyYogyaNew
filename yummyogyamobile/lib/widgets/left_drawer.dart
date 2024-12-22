@@ -1,48 +1,84 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:yummyogya_mobile/screens/login.dart';
 import 'package:yummyogya_mobile/profilepage/screens/profile_screen.dart';
+import 'package:yummyogya_mobile/screens/login.dart';
 
-class LeftDrawer extends StatelessWidget {
-  final String username; // Parameter untuk nama pengguna
+class LeftDrawer extends StatefulWidget {
+  final String username;
 
-  const LeftDrawer({Key? key, required this.username}) : super(key: key);
+  const LeftDrawer({super.key, required this.username});
 
-  // Fungsi logout
+  @override
+  LeftDrawerState createState() => LeftDrawerState();
+}
+
+class LeftDrawerState extends State<LeftDrawer> {
+  final String baseUrl = 'http://192.168.1.10:8000';
+  String? profilePhoto;
+  bool isLoadingProfilePhoto = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchProfilePhoto();
+  }
+
+  Future<void> fetchProfilePhoto() async {
+    final url = '$baseUrl/profilepage/profile/api/?username=${widget.username}';
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          profilePhoto = data['data']['profile_photo'];
+          isLoadingProfilePhoto = false;
+        });
+      } else {
+        setState(() {
+          isLoadingProfilePhoto = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        isLoadingProfilePhoto = false;
+      });
+    }
+  }
+
   Future<void> logout(BuildContext context) async {
-    const String logoutUrl =
-        'http://127.0.0.1:8000/authentication/logout_flutter/';
+    final String logoutUrl = '$baseUrl/authentication/logout_flutter/';
 
     try {
       final response = await http.post(Uri.parse(logoutUrl));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        if (data['status'] == true) {
+        if (data['status'] == true && context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(data['message'])),
           );
-
-          // Navigasi ke halaman login setelah logout
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const LoginPage()),
           );
-        } else {
+        } else if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("Logout gagal: ${data['message']}")),
           );
         }
-      } else {
+      } else if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Error: ${response.statusCode}")),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Terjadi kesalahan: $e")),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Terjadi kesalahan: $e")),
+        );
+      }
     }
   }
 
@@ -52,7 +88,6 @@ class LeftDrawer extends StatelessWidget {
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          // Drawer Header
           DrawerHeader(
             decoration: const BoxDecoration(
               color: Colors.orange,
@@ -60,14 +95,24 @@ class LeftDrawer extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const CircleAvatar(
+                CircleAvatar(
                   radius: 30,
-                  backgroundImage: NetworkImage(
-                      'https://via.placeholder.com/150'), // Ganti dengan gambar profil
+                  backgroundImage: isLoadingProfilePhoto
+                      ? null
+                      : (profilePhoto != null && profilePhoto!.isNotEmpty
+                          ? NetworkImage('$baseUrl$profilePhoto')
+                          : null),
+                  backgroundColor: Colors.grey[300],
+                  child: isLoadingProfilePhoto
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : (profilePhoto == null || profilePhoto!.isEmpty
+                          ? const Icon(Icons.person,
+                              size: 30, color: Colors.white)
+                          : null),
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Selamat Datang, $username!', // Menampilkan nama pengguna
+                  'Selamat Datang, ${widget.username}!',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -77,37 +122,35 @@ class LeftDrawer extends StatelessWidget {
               ],
             ),
           ),
-
           ListTile(
             leading: const Icon(Icons.edit),
             title: const Text('Edit Profil'),
             onTap: () {
-               Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ProfileScreen(username: username),
-                ),
-              );
+              if (context.mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        ProfileScreen(username: widget.username),
+                  ),
+                );
+              }
             },
           ),
-
-          // Divider
           const Divider(),
-
-          // Back to Homepage
           ListTile(
             leading: const Icon(Icons.home),
             title: const Text('Kembali ke Homepage'),
             onTap: () {
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/menu', // Route ke homepage (landing page)
-                (route) => false, // Menghapus semua rute sebelumnya
-              );
+              if (context.mounted) {
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/menu',
+                  (route) => false,
+                );
+              }
             },
           ),
-
-          // Logout Option
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('Logout'),
