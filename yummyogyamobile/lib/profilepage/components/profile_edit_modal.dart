@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
@@ -30,6 +32,7 @@ class ProfileEditModalState extends State<ProfileEditModal> {
   final TextEditingController _bioController = TextEditingController();
   bool _isSubmitting = false;
   File? _selectedPhoto;
+  Uint8List? _webSelectedPhoto;
 
   @override
   void initState() {
@@ -38,13 +41,21 @@ class ProfileEditModalState extends State<ProfileEditModal> {
   }
 
   Future<void> _pickPhoto() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
-    if (pickedFile != null && mounted) {
-      setState(() {
-        _selectedPhoto = File(pickedFile.path);
-      });
+    if (kIsWeb) {
+      final result = await FilePicker.platform.pickFiles(type: FileType.image);
+      if (result != null && result.files.single.bytes != null) {
+        setState(() {
+          _webSelectedPhoto = result.files.single.bytes!;
+        });
+      }
+    } else {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+      if (pickedFile != null && mounted) {
+        setState(() {
+          _selectedPhoto = File(pickedFile.path);
+        });
+      }
     }
   }
 
@@ -63,7 +74,14 @@ class ProfileEditModalState extends State<ProfileEditModal> {
       request.fields['username'] = widget.username;
       request.fields['bio'] = _bioController.text;
 
-      if (_selectedPhoto != null) {
+      if (kIsWeb && _webSelectedPhoto != null) {
+        request.files.add(http.MultipartFile.fromBytes(
+          'profile_photo',
+          _webSelectedPhoto!,
+          filename: 'uploaded_image.jpg',
+          contentType: MediaType('image', 'jpeg'),
+        ));
+      } else if (_selectedPhoto != null) {
         final mimeType = lookupMimeType(_selectedPhoto!.path) ?? 'image/jpeg';
         final fileName = path.basename(_selectedPhoto!.path);
         request.files.add(await http.MultipartFile.fromPath(
@@ -146,6 +164,7 @@ class ProfileEditModalState extends State<ProfileEditModal> {
         _showSnackbar(message, Colors.green);
         setState(() {
           _selectedPhoto = null;
+          _webSelectedPhoto = null;
         });
       } else {
         if (responseData.containsKey('errors')) {
@@ -204,14 +223,16 @@ class ProfileEditModalState extends State<ProfileEditModal> {
               onTap: _pickPhoto,
               child: CircleAvatar(
                 radius: 50,
-                backgroundImage: _selectedPhoto != null
-                    ? FileImage(_selectedPhoto!) as ImageProvider
-                    : (widget.currentProfilePhoto.isNotEmpty
-                        ? NetworkImage(
-                            '${widget.baseUrl}${widget.currentProfilePhoto}')
-                        : null),
+                backgroundImage: kIsWeb && _webSelectedPhoto != null
+                    ? MemoryImage(_webSelectedPhoto!)
+                    : (_selectedPhoto != null
+                        ? FileImage(_selectedPhoto!) as ImageProvider
+                        : (widget.currentProfilePhoto.isNotEmpty
+                            ? NetworkImage(
+                                '${widget.baseUrl}${widget.currentProfilePhoto}')
+                            : null)),
                 backgroundColor: Colors.grey[300],
-                child: (_selectedPhoto == null &&
+                child: ((_selectedPhoto == null && _webSelectedPhoto == null) &&
                         widget.currentProfilePhoto.isEmpty)
                     ? const Icon(Icons.person, size: 50, color: Colors.white)
                     : null,
@@ -225,34 +246,26 @@ class ProfileEditModalState extends State<ProfileEditModal> {
               ElevatedButton.icon(
                 onPressed: _pickPhoto,
                 icon: const Icon(Icons.photo_library, color: Colors.white),
-                label: const Text(
-                  'Pilih Foto',
-                  style: TextStyle(color: Colors.white),
-                ),
+                label: const Text('Pilih Foto',
+                    style: TextStyle(color: Colors.white)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 ),
               ),
               const SizedBox(width: 16),
               ElevatedButton.icon(
                 onPressed: _isSubmitting ? null : _removePhoto,
                 icon: const Icon(Icons.delete, color: Colors.white),
-                label: const Text(
-                  'Hapus Foto',
-                  style: TextStyle(color: Colors.white),
-                ),
+                label: const Text('Hapus Foto',
+                    style: TextStyle(color: Colors.white)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.redAccent,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 ),
               ),
             ],
@@ -287,19 +300,13 @@ class ProfileEditModalState extends State<ProfileEditModal> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 24,
-                    ),
                   ),
-                  child: const Center(
-                    child: Text(
-                      'Simpan Perubahan',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Colors.white,
-                      ),
+                  child: const Text(
+                    'Simpan Perubahan',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
