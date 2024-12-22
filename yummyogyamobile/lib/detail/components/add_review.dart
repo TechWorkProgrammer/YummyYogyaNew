@@ -28,7 +28,7 @@ class AddReviewForm extends StatelessWidget {
               onPressed: isLoading ? null : () => onRatingSelected(index + 1),
               icon: Icon(
                 Icons.star,
-                size: 40, // Lebih besar agar lebih terlihat
+                size: 40,
                 color:
                     index < selectedRating ? Colors.orange : Colors.grey[400],
               ),

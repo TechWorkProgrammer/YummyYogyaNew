@@ -104,6 +104,7 @@ def get_profile_flutter(request):
             {
                 "id": review.id,
                 "food_name": review.food.nama if review.food else "Tidak ada",
+                "food_id": review.food.id if review.food else "",
                 "rating": review.rating,
                 "review": review.review,
                 "date": review.created_at.strftime("%Y-%m-%d"),

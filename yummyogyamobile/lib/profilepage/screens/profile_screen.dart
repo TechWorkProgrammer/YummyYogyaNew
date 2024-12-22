@@ -101,9 +101,10 @@ class ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   ProfileHeader(profileData: profileData, baseUrl: baseUrl),
                   const SizedBox(height: 16),
-                  WishlistList(wishlist: profileData['wishlist'] ?? []),
+                  WishlistList(wishlist: profileData['wishlist'] ?? [], username: profileData['username']),
                   const SizedBox(height: 16),
                   ReviewList(
+                    username: profileData['username'],
                     reviews: profileData['reviews'] ?? [],
                     searchQuery: searchQuery,
                     filter: filter,

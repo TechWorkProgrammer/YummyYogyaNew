@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:yummyogya_mobile/detail/screens/detail_makanan.dart';
 
 class ReviewList extends StatelessWidget {
   final List<dynamic> reviews;
@@ -6,6 +7,7 @@ class ReviewList extends StatelessWidget {
   final String filter;
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<String?> onFilterChanged;
+  final String username;
 
   const ReviewList({
     super.key,
@@ -14,10 +16,10 @@ class ReviewList extends StatelessWidget {
     required this.filter,
     required this.onSearchChanged,
     required this.onFilterChanged,
+    required this.username,
   });
 
-  List<dynamic> filterAndSearch(
-      List<dynamic> list, String query, String filter) {
+  List<dynamic> filterAndSearch(List<dynamic> list, String query, String filter) {
     List<dynamic> filteredList = list.where((item) {
       if (filter == 'all') return true;
       if (filter == 'high_rating' && item['rating'] >= 4) return true;
@@ -33,8 +35,8 @@ class ReviewList extends StatelessWidget {
 
     return filteredList
         .where((item) =>
-            query.isEmpty ||
-            item['food_name'].toLowerCase().contains(query.toLowerCase()))
+    query.isEmpty ||
+        item['food_name'].toLowerCase().contains(query.toLowerCase()))
         .toList();
   }
 
@@ -86,15 +88,14 @@ class ReviewList extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: () => _showFilterDialog(context),
               icon: const Icon(Icons.filter_list, color: Colors.white),
-              label:
-                  const Text('Filter', style: TextStyle(color: Colors.white)),
+              label: const Text('Filter', style: TextStyle(color: Colors.white)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+                const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
               ),
             ),
           ],
@@ -102,48 +103,62 @@ class ReviewList extends StatelessWidget {
         const SizedBox(height: 8),
         filteredReviews.isNotEmpty
             ? ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: filteredReviews.length,
-                itemBuilder: (context, index) {
-                  final review = filteredReviews[index];
-                  return Card(
-                    color: Colors.orange[50],
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      side: const BorderSide(color: Colors.orange),
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: filteredReviews.length,
+          itemBuilder: (context, index) {
+            final review = filteredReviews[index];
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DetailPage(
+                      foodId: review['food_id'].toString(),
+                      username: username,
                     ),
-                    child: ListTile(
-                      title: Text(
-                        review['food_name'],
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, color: Colors.black87),
-                      ),
-                      subtitle: Text(
-                        '${review['rating']} Stars\n${review['review']}',
-                        style: const TextStyle(color: Colors.black54),
-                      ),
-                      trailing: const Icon(Icons.star, color: Colors.orange),
-                    ),
-                  );
-                },
-              )
-            : Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 20),
-                  child: Text(
-                    searchQuery.isEmpty
-                        ? 'Belum ada review.'
-                        : 'Tidak ada review yang cocok dengan pencarian.',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                    textAlign: TextAlign.center,
                   ),
+                );
+              },
+              child: Card(
+                color: Colors.orange[50],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  side: const BorderSide(color: Colors.orange),
+                ),
+                child: ListTile(
+                  title: Text(
+                    review['food_name'],
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87),
+                  ),
+                  subtitle: Text(
+                    '${review['rating']} Stars\n${review['review']}',
+                    style: const TextStyle(color: Colors.black54),
+                  ),
+                  trailing: const Icon(Icons.star, color: Colors.orange),
                 ),
               ),
+            );
+          },
+        )
+            : Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Text(
+              searchQuery.isEmpty
+                  ? 'Belum ada review.'
+                  : 'Tidak ada review yang cocok dengan pencarian.',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
       ],
     );
   }

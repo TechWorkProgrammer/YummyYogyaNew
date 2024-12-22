@@ -46,9 +46,6 @@ class ChangePasswordModalState extends State<ChangePasswordModal> {
         'new_password2': _confirmPasswordController.text,
       };
 
-      debugPrint('Request URL: $url');
-      debugPrint('Payload: ${jsonEncode(payload)}');
-
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},

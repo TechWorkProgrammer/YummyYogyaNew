@@ -8,10 +8,16 @@ import 'package:yummyogya_mobile/detail/components/review_list.dart';
 import 'package:yummyogya_mobile/models/makanan_entry.dart';
 
 class DetailPage extends StatefulWidget {
-  final Makanan makanan;
+  final Makanan? makanan;
+  final String? foodId;
   final String username;
 
-  const DetailPage({required this.makanan, required this.username, super.key});
+  const DetailPage({
+    super.key,
+    this.makanan,
+    this.foodId,
+    required this.username,
+  });
 
   @override
   DetailPageState createState() => DetailPageState();
@@ -25,15 +31,22 @@ class DetailPageState extends State<DetailPage> {
   bool isSubmitting = false;
   TextEditingController reviewController = TextEditingController();
 
+  String? get foodId {
+    return widget.foodId ?? widget.makanan?.pk.toString();
+  }
+
   @override
   void initState() {
     super.initState();
-    fetchFoodDetails();
+    if (foodId != null) {
+      fetchFoodDetails();
+    } else {
+      showSnackbar('Food ID tidak tersedia');
+    }
   }
 
   Future<void> fetchFoodDetails() async {
-    final url = Uri.parse(
-        '$baseUrl/details/details_flutter/?food_id=${widget.makanan.pk}');
+    final url = Uri.parse('$baseUrl/details/details_flutter/?food_id=$foodId');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -51,6 +64,11 @@ class DetailPageState extends State<DetailPage> {
   }
 
   Future<void> submitReview() async {
+    if (foodId == null) {
+      showSnackbar('Food ID tidak tersedia');
+      return;
+    }
+
     setState(() {
       isSubmitting = true;
     });
@@ -61,7 +79,7 @@ class DetailPageState extends State<DetailPage> {
         url,
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
-          'food_id': widget.makanan.pk,
+          'food_id': foodId,
           'username': widget.username,
           'rating': selectedRating,
           'review': reviewController.text,
@@ -103,29 +121,29 @@ class DetailPageState extends State<DetailPage> {
       ),
       body: foodData.isNotEmpty
           ? SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    DetailCard(foodData: foodData),
-                    const SizedBox(height: 24),
-                    AddReviewForm(
-                      reviewController: reviewController,
-                      selectedRating: selectedRating,
-                      onRatingSelected: (rating) =>
-                          setState(() => selectedRating = rating),
-                      onSubmit: submitReview,
-                      isLoading: isSubmitting,
-                    ),
-                    const SizedBox(height: 24),
-                    ReviewList(reviews: reviews),
-                  ],
-                ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              DetailCard(foodData: foodData),
+              const SizedBox(height: 24),
+              AddReviewForm(
+                reviewController: reviewController,
+                selectedRating: selectedRating,
+                onRatingSelected: (rating) =>
+                    setState(() => selectedRating = rating),
+                onSubmit: submitReview,
+                isLoading: isSubmitting,
               ),
-            )
+              const SizedBox(height: 24),
+              ReviewList(reviews: reviews),
+            ],
+          ),
+        ),
+      )
           : const Center(
-              child: CircularProgressIndicator(color: Colors.orange)),
+          child: CircularProgressIndicator(color: Colors.orange)),
     );
   }
 }
