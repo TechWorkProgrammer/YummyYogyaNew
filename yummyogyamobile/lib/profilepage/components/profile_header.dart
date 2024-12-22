@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:yummyogya_mobile/profilepage/components/profile_edit_modal.dart';
 import 'package:yummyogya_mobile/profilepage/components/change_password_modal.dart';
+import 'package:yummyogya_mobile/profilepage/components/profile_edit_modal.dart';
 
 class ProfileHeader extends StatelessWidget {
   final Map<String, dynamic> profileData;
@@ -12,11 +12,11 @@ class ProfileHeader extends StatelessWidget {
     required this.baseUrl,
   });
 
-  void _openEditProfileModal(BuildContext context) async {
+  void _openEditProfileModal(BuildContext currentContext) async {
     final result = await showModalBottomSheet(
-      context: context,
+      context: currentContext,
       isScrollControlled: true,
-      builder: (context) => ProfileEditModal(
+      builder: (modalContext) => ProfileEditModal(
         baseUrl: baseUrl,
         username: profileData['username'],
         currentBio: profileData['bio'] ?? '',
@@ -25,26 +25,30 @@ class ProfileHeader extends StatelessWidget {
     );
 
     if (result == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profil berhasil diperbarui!')),
-      );
+      if (currentContext.mounted) {
+        ScaffoldMessenger.of(currentContext).showSnackBar(
+          const SnackBar(content: Text('Profil berhasil diperbarui!')),
+        );
+      }
     }
   }
 
-  void _openChangePasswordModal(BuildContext context) async {
+  void _openChangePasswordModal(BuildContext currentContext) async {
     final result = await showModalBottomSheet(
-      context: context,
+      context: currentContext,
       isScrollControlled: true,
-      builder: (context) => ChangePasswordModal(
+      builder: (modalContext) => ChangePasswordModal(
         baseUrl: baseUrl,
         username: profileData['username'],
       ),
     );
 
     if (result == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password berhasil diubah!')),
-      );
+      if (currentContext.mounted) {
+        ScaffoldMessenger.of(currentContext).showSnackBar(
+          const SnackBar(content: Text('Password berhasil diubah!')),
+        );
+      }
     }
   }
 

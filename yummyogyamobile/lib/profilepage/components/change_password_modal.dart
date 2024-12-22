@@ -37,31 +37,40 @@ class ChangePasswordModalState extends State<ChangePasswordModal> {
     });
 
     try {
+      final url = Uri.parse(
+          '${widget.baseUrl}/profilepage/profile/change-password/api/');
+      final payload = {
+        'username': widget.username,
+        'old_password': _oldPasswordController.text,
+        'new_password1': _newPasswordController.text,
+        'new_password2': _confirmPasswordController.text,
+      };
+
+      debugPrint('Request URL: $url');
+      debugPrint('Payload: ${jsonEncode(payload)}');
+
       final response = await http.post(
-        Uri.parse('${widget.baseUrl}/profilepage/change-password/api'),
+        url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'username': widget.username,
-          'old_password': _oldPasswordController.text,
-          'new_password1': _newPasswordController.text,
-          'new_password2': _confirmPasswordController.text,
-        }),
+        body: jsonEncode(payload),
       );
+
+      debugPrint('Response Status Code: ${response.statusCode}');
+      debugPrint('Response Body: ${response.body}');
 
       final responseData = jsonDecode(response.body);
 
-      if (mounted) {
-        if (response.statusCode == 200 && responseData['success']) {
-          _showSnackbar(responseData['message'], Colors.green);
+      if (response.statusCode == 200 && responseData['success']) {
+        _showSnackbar(responseData['message'], Colors.green);
+        if (mounted) {
           Navigator.pop(context, true);
-        } else {
-          _showSnackbar(responseData['message'], Colors.red);
         }
+      } else {
+        _showSnackbar(responseData['message'], Colors.red);
       }
     } catch (e) {
-      if (mounted) {
-        _showSnackbar('An error occurred: $e', Colors.red);
-      }
+      debugPrint('Error during password change: $e');
+      _showSnackbar('An error occurred: $e', Colors.red);
     } finally {
       if (mounted) {
         setState(() {
