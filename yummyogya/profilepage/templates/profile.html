@@ -1,0 +1,274 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% include 'navbar.html' %}
+
+<div style="max-width: 950px; margin: 40px auto 60px auto; padding-top: 60px;">
+
+    <!-- Informasi Pengguna -->
+    <div class="bg-white shadow-lg rounded-lg p-6 mb-6">
+        <div class="flex items-center space-x-4">
+            {% if user.profile.profile_photo %}
+                <img src="{{ user.profile.profile_photo.url }}" alt="Foto Profil" class="w-16 h-16 rounded-full object-cover border-2 border-black">
+            {% else %}
+                <div class="relative w-16 h-16 overflow-hidden bg-gray-600 rounded-full">
+                    <svg class="absolute w-20 h-20 text-gray-300 -left-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+            {% endif %}
+            <div>
+                <h2 class="text-2xl font-semibold  text-orange-500 bg-orange-200 px-3 py-1 rounded-md inline-block">{{ user.username }}</h2>
+                <p class="text-sm text-gray-600">Bergabung sejak: {{ user.date_joined|date:"d M Y" }}</p>
+                <p class="text-sm text-gray-600">Terakhir login: {{ last_login }}</p>
+            </div>
+        </div>
+        <div class="mt-4">
+            <p class="text-gray-800">{{ user.profile.bio }}</p>
+        </div>
+        <button class="mt-4 bg-orange-600 text-white px-4 py-2 rounded" id="edit-profile-btn">Edit Profile</button>
+        <button class="mt-4 bg-red-600 text-white px-4 py-2 rounded" id="change-password-btn">Ganti Password</button>
+    </div>
+
+    <!-- Form Edit Profile AJAX-->
+    <div id="edit-profile-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white rounded shadow-lg p-6 w-full max-w-3xl">
+            <h2 class="text-2xl mb-4">Edit Profile</h2>
+            
+            <!-- Error Handling Block -->
+            <div id="error-messages" class="text-red-500 mb-4 hidden"></div>
+            
+            <form id="edit-profile-form" method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label for="profile_photo" class="block font-semibold mb-2">Foto Profil</label>
+                    <input type="file" name="profile_photo" id="profile_photo" class="border border-gray-300 rounded px-4 py-2 w-full">
+                </div>
+                <div class="mb-4">
+                    <input type="checkbox" id="delete_photo" name="delete_photo">
+                    <label for="delete_photo" class="font-semibold">Hapus Foto Profil</label>
+                </div>
+                <div class="mb-4">
+                    <label for="bio" class="block font-semibold mb-2">Bio</label>
+                    <textarea name="bio" id="bio" rows="3" class="border border-gray-300 rounded px-4 py-2 w-full">{{ user.profile.bio }}</textarea>
+                </div>
+                <button type="submit" class="bg-orange-600 text-white px-4 py-2 rounded">Simpan Perubahan</button>
+                <button type="button" id="close-modal" class="bg-gray-300 text-gray-800 px-4 py-2 rounded">Batal</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Form Change Password Modal -->
+    <div id="change-password-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white rounded shadow-lg p-6 w-full max-w-3xl">
+            <h2 class="text-2xl mb-4">Ganti Password</h2>
+            
+            <!-- Error Handling Block -->
+            <div id="password-error-messages" class="text-red-500 mb-4 hidden"></div>
+            
+            <form id="change-password-form" method="POST">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label for="old_password" class="block font-semibold mb-2">Password Lama</label>
+                    <input type="password" name="old_password" id="old_password" class="border border-gray-300 rounded px-4 py-2 w-full" required>
+                </div>
+                <div class="mb-4">
+                    <label for="new_password1" class="block font-semibold mb-2">Password Baru</label>
+                    <input type="password" name="new_password1" id="new_password1" class="border border-gray-300 rounded px-4 py-2 w-full" required>
+                </div>
+                <div class="mb-4">
+                    <label for="new_password2" class="block font-semibold mb-2">Konfirmasi Password Baru</label>
+                    <input type="password" name="new_password2" id="new_password2" class="border border-gray-300 rounded px-4 py-2 w-full" required>
+                </div>
+                <button type="submit" class="bg-orange-600 text-white px-4 py-2 rounded">Simpan Perubahan</button>
+                <button type="button" id="close-password-modal" class="bg-gray-300 text-gray-800 px-4 py-2 rounded">Batal</button>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- Wishlist -->
+    <div class="bg-white rounded-lg shadow-lg mb-6">
+        <!-- Title with orange background at the top -->
+        <div class="bg-orange-600 text-white rounded-t-lg py-3 px-4 mb-4">
+            <h3 class="text-xl font-semibold">Wishlist</h3>
+        </div>
+        
+        <!-- Wishlist Content -->
+        <div class="p-4">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
+                {% if food_items %}
+                    {% for item in food_items %}
+                        <div class="bg-white/90 border border-gray-300 rounded-lg shadow-md pb-2 overflow-hidden hover:bg-orange-50 transition duration-200">
+                            <img src="{{ item.gambar }}" alt="{{ item.nama }}" class="w-full h-48 object-cover rounded-t-lg">
+                            <div class="p-4 text-center">
+                                <a href="{% url 'details:food_detail' item.id %}" class="font-semibold text-orange-600 text-lg no-underline hover:underline">{{ item.nama }}</a>
+                                <p class="text-base text-gray-600 mb-1">Harga: Rp {{ item.harga }}</p>
+                                <p class="text-base text-gray-600 mb-1">{{ item.deskripsi|truncatewords:7 }}</p>
+                                <p class="text-base text-orange-400 mb-1">Rating: {{ item.rating }} / 5</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-gray-600">Belum ada item di wishlist.</p>
+                {% endif %}
+            </div>
+            <a href="{% url 'wishlist:view_wishlist' %}" class="mt-6 inline-block text-orange-600 font-semibold">Lihat seluruh wishlist</a>
+        </div>
+    </div>
+
+    <!-- Riwayat Ulasan -->
+    <div class="bg-white rounded-lg shadow-lg mb-6">
+        <!-- Title with orange background at the top -->
+        <div class="bg-orange-600 text-white rounded-t-lg py-3 px-4 mb-2">
+            <h3 class="text-xl font-semibold">Riwayat Ulasan</h3>
+        </div>
+        
+        <!-- Filter Ascending Descending -->
+        <div class="flex justify-start ml-4 mt-4 ">
+            <select id="review-order" class="border border-orange-300 rounded px-2 py-1">
+                <option value="latest" {% if request.GET.order == "latest" %}selected{% endif %}>Terbaru</option>
+                <option value="oldest" {% if request.GET.order == "oldest" %}selected{% endif %}>Terlama</option>
+            </select>
+        </div>
+
+        <!-- Riwayat Ulasan Content -->
+        <div class="p-4">
+            {% if reviews %}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {% for review in reviews %}
+                        <div class="p-4 bg-gray-100 rounded-lg mb-2 border-l-4 border-orange-600 hover:bg-orange-100">
+                       <a href="{% url 'details:food_detail' review.food.id %}" class="text-orange-600 font-semibold hover:underline">
+                                {% if review.food %}
+                                    {{ review.food.nama }}
+                                {% else %}
+                                    {{ review.food_alt.name }}
+                                {% endif %}
+                            </a>
+                            <p class="text-sm text-gray-600">Rating: {{ review.rating }}/5</p>
+                            <p class="text-gray-800">{{ review.review|truncatewords:6 }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-gray-600">Belum pernah membuat ulasan.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<footer class="bg-orange-600 text-white text-center py-3">
+    <p>&copy; 2024 Yummyogya. Semua hak dilindungi undang-undang.</p>
+</footer>
+
+<!-- JavaScript Form Edit Profile dan Ganti Password -->
+<script>
+    document.getElementById('edit-profile-btn').addEventListener('click', function() {
+        document.getElementById('edit-profile-modal').classList.remove('hidden');
+    });
+    
+    document.getElementById('close-modal').addEventListener('click', function() {
+        document.getElementById('edit-profile-modal').classList.add('hidden');
+    });
+
+    // Mencegah unggah file bersamaan dengan opsi hapus foto profil
+    document.getElementById('profile_photo').addEventListener('change', function() {
+        const deletePhotoCheckbox = document.getElementById('delete_photo');
+        if (this.files.length > 0) {
+            deletePhotoCheckbox.checked = false;
+            deletePhotoCheckbox.disabled = true;
+        } else {
+            deletePhotoCheckbox.disabled = false;
+        }
+    });
+
+    document.getElementById('delete_photo').addEventListener('change', function() {
+        const profilePhotoInput = document.getElementById('profile_photo');
+        if (this.checked) {
+            profilePhotoInput.value = "";
+            profilePhotoInput.disabled = true;
+        } else {
+            profilePhotoInput.disabled = false;
+        }
+    });
+    
+    // AJAX Form Edit Profile
+    document.getElementById('edit-profile-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        let formData = new FormData(this);
+
+        fetch("{% url 'profilepage:update_profile' %}", {
+            method: "POST",
+            body: formData,
+            headers: { "X-Requested-With": "XMLHttpRequest" },
+        })
+        .then(response => response.json())
+        .then(data => {
+            const errorMessages = document.getElementById('error-messages');
+            errorMessages.innerHTML = '';
+            if (data.success) {
+                location.reload();
+            } else {
+                // Error message
+                for (const [field, messages] of Object.entries(data.errors)) {
+                    errorMessages.innerHTML += `<p>${field}: ${messages.join(', ')}</p>`;
+                }
+                errorMessages.classList.remove('hidden');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan, silakan coba lagi.');
+        });
+    });
+
+    document.getElementById('change-password-btn').addEventListener('click', function() {
+        document.getElementById('change-password-modal').classList.remove('hidden');
+    });
+
+    document.getElementById('close-password-modal').addEventListener('click', function() {
+        document.getElementById('change-password-modal').classList.add('hidden');
+    });
+
+    // AJAX FormGanti Password
+    document.getElementById('change-password-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        let formData = new FormData(this);
+
+        fetch("{% url 'profilepage:change_password' %}", {
+            method: "POST",
+            body: formData,
+            headers: { "X-Requested-With": "XMLHttpRequest" },
+        })
+        .then(response => response.json())
+        .then(data => {
+            const passwordErrorMessages = document.getElementById('password-error-messages');
+            passwordErrorMessages.innerHTML = '';
+            if (data.success) {
+                alert("Password berhasil diubah!");
+                document.getElementById('change-password-modal').classList.add('hidden');
+                this.reset();
+            } else {
+                // Error message
+                for (const [field, messages] of Object.entries(data.errors)) {
+                    passwordErrorMessages.innerHTML += `<p>${field}: ${messages.join(', ')}</p>`;
+                }
+                passwordErrorMessages.classList.remove('hidden');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan, silakan coba lagi.');
+        });
+    });
+
+    // Filter Ulasan
+    document.getElementById('review-order').addEventListener('change', function() {
+        const order = this.value;
+        const url = new URL(window.location.href);
+        url.searchParams.set('order', order);
+        window.location.href = url.toString();
+    });
+</script>
+
+{% endblock content %}

@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+{% include 'navbar.html' %}
+
+<div class="container mx-auto p-5 mt-20">
+    <div class="bg-white p-5 rounded-lg shadow-md text-center">
+        <h1 class="text-2xl font-bold mb-4">Hapus Artikel</h1>
+        <p>Apakah Anda yakin ingin menghapus artikel "<strong>{{ article_entry.title }}</strong>"?</p>
+        <form method="post" class="mt-4">
+            {% csrf_token %}
+            <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition duration-300">
+                Hapus
+            </button>
+            <a href="{% url 'article:article_list' %}" class="ml-2 bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition duration-300">
+                Batal
+            </a>
+        </form>
+    </div>
+</div>
+{% endblock content %}

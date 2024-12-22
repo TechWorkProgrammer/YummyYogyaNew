@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+{% include 'navbar.html' %}
+<div class="dashboard-container flex flex-col items-center justify-center min-h-screen bg-gray-100 p-6">
+    <h2 class="text-4xl font-bold text-gray-800 mb-6">Dashboard Kamu</h2>
+    <a href="{% url 'dashboard:add_food' %}" class="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-700 transition duration-300 mb-8">Tambah Makanan Baru</a>
+
+    <div class="sort-options text-center mb-4">
+        <form method="get" action="{% url 'dashboard:dashboard' %}" class="inline-flex items-center gap-2">
+            <label for="sort_by" class="font-semibold text-gray-700">Sort by:</label>
+            <select name="sort_by" id="sort_by" class="border border-gray-300 rounded p-1">
+                <option value="price" {% if sort_by == 'price' %}selected{% endif %}>Price</option>
+                <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Name</option>
+            </select>
+            
+            <select name="sort_order" id="sort_order" class="border border-gray-300 rounded p-1" onchange="this.form.submit()">
+                <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>Ascending</option>
+                <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>Descending</option>
+            </select>
+        </form>
+    </div>
+
+    {% if foods %}
+        <div class="food-cards grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 w-full">
+            {% for food in foods %}
+                <div class="card shadow-lg rounded-lg overflow-hidden bg-white hover:shadow-xl transition duration-300">
+                    <div class="image-container">
+                        <img src="{{ food.image_url }}" alt="{{ food.name }}" class="w-full h-48 object-cover">
+                    </div>
+
+                    <div class="card-body p-4">
+                        <h3 class="text-lg font-semibold text-gray-800">{{ food.name }}</h3>
+                        <p class="text-gray-600">{{ food.description }}</p>
+
+                        <div class="price font-bold mt-2 flex items-center text-gray-800">
+                            <img src="https://pngimg.com/uploads/dollar_sign/dollar_sign_PNG37.png" alt="Dollar icon" class="w-4 h-4 mr-2">
+                            Rp {% with price=food.price|stringformat:"d" %}
+                            {{ price|slice:":-3" }}.{{ price|slice:"-3:" }}
+                            {% endwith %}
+                        </div>
+
+                        <div class="restoran flex items-center mt-2 text-black-600">
+                            <img src="https://static.vecteezy.com/system/resources/previews/000/583/611/original/location-icon-vector.jpg" alt="Location icon" class="w-4 h-4 mr-2">
+                            {{ food.restaurant }}
+                        </div>
+
+                        <div class="rating flex items-center mt-2 mb-8 text-black-500">
+                            <img src="https://static.vecteezy.com/system/resources/previews/000/367/368/original/star-vector-icon.jpg" alt="Star icon" class="w-4 h-4 mr-2">
+                            {{ food.rating|floatformat:1 }} / 5
+                        </div>
+                        
+                         <div class="card-buttons mt-4 mb-2 flex justify-between">
+                            <a href="{% url 'dashboard:edit_food' food.pk %}" class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition duration-300 flex items-center">
+                                <img src="https://icon-library.com/images/edit-svg-icon/edit-svg-icon-22.jpg" alt="Edit" class="w-4 h-4 mr-1"> Edit
+                            </a>
+                            <a href="{% url 'dashboard:delete_food' food.pk %}" class="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition duration-300 flex items-center">
+                                <img src="https://static-00.iconduck.com/assets.00/delete-icon-1864x2048-bp2i0gor.png" alt="Delete" class="w-4 h-4 mr-1"> Hapus
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-gray-700 text-center mt-6">Belum ada makanan yang dibuat.</p>
+    {% endif %}
+</div>
+{% endblock content %}

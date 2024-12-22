@@ -1,0 +1,451 @@
+{% extends 'base.html' %}
+{% block content %}
+{% include 'navbar.html' %}
+{% load static %}
+
+<style>
+    /* Font styling untuk aesthetic modern */
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
+    body {
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .container {
+        padding-top: 40px;
+        width: 80%;
+        margin: 20px auto;
+    }
+
+    .hero-section {
+        position: relative;
+        width: 100vw; /* Full width */
+        left: 50%;
+        right: 50%;
+        margin-left: -50vw; /* Centers the full-width element */
+        margin-right: -50vw;
+        overflow: hidden;
+        padding: 120px 20px;
+        color: white;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        z-index: 1;
+        margin-bottom: 40px;
+    }
+
+    .hero-section video {
+        position: absolute;
+        top: 40%;
+        left: 50%;
+        width: 100vw; /* Full width video */
+        height: 100vh; /* Full height video */
+        object-fit: cover;
+        transform: translate(-50%, -50%);
+        z-index: -1;
+    }
+
+    .hero-section h1,
+    .hero-section p {
+        position: relative; /* Memastikan teks muncul di depan video */
+        z-index: 1; /* Konten di atas video */
+    }
+
+    .hero-content {
+        position: relative;
+        text-align: center;
+        z-index: 2;
+    }
+
+    .hero-content h1 {
+        font-weight: 700;
+        font-size: 4em;
+        margin-bottom: 10px;
+        letter-spacing: 0.05em;
+    }
+
+    .hero-content p {
+        font-size: 1.4em;
+        color: #f1f1f1;
+        max-width: 700px;
+        margin: 0 auto;
+    }
+
+
+    .hero-section::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6); /* Overlay lembut */
+        border-radius: 16px;
+    }
+
+    .hero-section h1, .hero-section p {
+        position: relative;
+        z-index: 10; /* Agar berada di atas overlay */
+    }
+
+    .hero-section h1 {
+        font-weight: 700;
+        font-size: 4em;
+        margin-bottom: 20px;
+        letter-spacing: 0.05em;
+    }
+
+    .hero-section p {
+        font-size: 1.4em;
+        color: #f1f1f1;
+        max-width: 700px;
+        margin: 0 auto;
+    }
+
+
+    /* Existing styles remain unchanged... */
+
+    /* Adjusted article section */
+    .article-section {
+        background-color: rgba(82, 81, 81, 0.5); /* White background with 80% opacity */
+        padding: 50px 40px;
+        margin-top: 40px;
+        margin-bottom: 30px;
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        max-width: 800px; /* Optional: limit the width of the article section */
+        margin-left: auto; /* Center align */
+        margin-right: auto; /* Center align */
+    }
+
+    /* Adjust card styles if necessary */
+    .card {
+        background-color: rgba(255, 255, 255, 0.9); /* White background with 90% opacity */
+        border: 1px solid rgba(221, 221, 221, 0.7); /* Lighter border for better visibility */
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+
+
+    .article-section h2 {
+        font-size: 3em;
+        color: white;
+        margin-bottom: 20px;
+    }
+
+    .article-section p {
+        font-size: 1.2em;
+        color: white;
+        margin-bottom: 25px;
+        max-width: 800px;
+        margin: 0 auto 30px;
+    }
+
+    .article-section .btn-read-more {
+        background-color: #FF6600;
+        color: white;
+        padding: 12px 30px;
+        text-decoration: none;
+        border-radius: 8px;
+        font-size: 1.1em;
+        font-weight: 600;
+        transition: background-color 0.3s ease;
+    }
+
+    .article-section .btn-read-more:hover {
+        background-color: #FF4500;
+    }
+
+    /* Search bar styling yang lebih modern */
+    .search-bar {
+        margin-bottom: 30px;
+        text-align: center;
+    }
+
+    .search-bar input[type="text"] {
+        padding: 15px;
+        font-size: 18px;
+        width: 400px;
+        border: 2px solid #FF6600;
+        border-radius: 8px;
+        transition: border-color 0.3s ease;
+    }
+
+    .search-bar input[type="text"]:focus {
+        border-color: #FF4500;
+        /* outline: none; */
+    }
+
+    .search-bar button {
+        padding: 14px 20px;
+        font-size: 18px;
+        background-color: #FF6600;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .search-bar button:hover {
+        background-color: #FF4500;
+    }
+
+    /* Styling untuk kartu produk */
+    .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 30px;
+        margin-top: 40px;
+    }
+
+
+    .card img {
+        width: 100%;
+        height: 250px;
+        object-fit: cover;
+    }
+
+    .card:hover {
+        transform: scale(1.03);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .card-body {
+        padding: 20px;
+        text-align: center;
+    }
+
+    .card-body h3 {
+        font-size: 1.6em;
+        margin-bottom: 12px;
+        font-weight: 600;
+    }
+
+    .card-body p {
+        color: #666;
+        margin-bottom: 15px;
+    }
+
+    .card-body .price {
+        font-weight: 700;
+        font-size: 1.3em;
+        color: #FF6600;
+    }
+
+    /* Pagination styling */
+    .pagination {
+        display: flex;
+        justify-content: center;
+        margin-top: 40px;
+    }
+
+    .pagination a {
+        margin: 0 8px;
+        padding: 12px 20px;
+        background-color: #FF6600;
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        transition: background-color 0.3s ease;
+    }
+
+    .pagination a:hover {
+        background-color: #FF4500;
+    }
+
+    /* Footer styling */
+    footer {
+        background-color: #FF6600;
+        color: white;
+        text-align: center;
+        padding: 30px;
+        margin-top: 40px;
+        border-radius: 8px;
+    }
+</style>
+
+<div class="container">
+    <!-- Section Artikel -->
+    <div class="hero-section">
+        <video autoplay loop muted playsinline>
+            <source src="{% static 'media/video.mp4' %}" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <div class="hero-content">
+            <h1>Yummyogya</h1>
+           
+            <p>Hadir membantu wisatawan dan masyarakat lokal menemukan makanan khas Yogyakarta. Temukan makanan legendaris maupun yang belum dikenal, serta dukung UMKM lokal!</p>
+
+            <div class="article-section">
+                <h2>Sejarah Kuliner Jogja</h2>
+                <p>Kuliner Yogyakarta memiliki akar budaya yang sangat dalam, mulai dari makanan tradisional Keraton hingga jajanan pasar yang tetap lestari hingga kini.</p>
+                <a href="{% url 'main:article_list' %}" class="btn-read-more">
+                    Selengkapnya
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="search-bar">
+        <input type="text" id="search-query" value="{{ query|default_if_none:'' }}" placeholder="Cari makanan...">
+        <button id="search-button">Cari</button>
+    </div>
+    
+
+    <div id="search-results">
+        {% include 'card_makanan.html' %}
+    </div>
+
+    <div class="fixed bottom-4 right-4">
+        <a href="{% url 'wishlist:view_wishlist' %}" class="relative inline-flex items-center">
+            <!-- Image Icon without Background -->
+            <img src="{% static 'images/cart_wishlist.png' %}" alt="Wishlist Icon" class="w-11 h-11">
+        </a> 
+    </div>
+</div>
+
+<div class="pagination">
+    <!-- Pagination buttons will be dynamically inserted here -->
+</div>
+
+<footer>
+    <p>&copy; 2024 Yummyogya. Semua hak dilindungi undang-undang.</p>
+</footer>
+
+
+
+<script>
+    function getCSRFToken() {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, 10) === 'csrftoken=') {
+                    cookieValue = decodeURIComponent(cookie.substring(10));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Load initial page of results on document ready
+    document.addEventListener("DOMContentLoaded", function() {
+        document.getElementById("search-button").addEventListener("click", function() {
+            loadPage(1);  // Initialize search from page 1
+        });
+    });
+
+    // Main AJAX pagination function to load and display items on each page
+    function loadPage(pageNumber) {
+        const query = document.getElementById("search-query").value;
+        const csrftoken = getCSRFToken();
+
+        fetch(`/search-ajax/?q=${query}&page=${pageNumber}`, {
+            method: 'GET',
+            headers: {
+                'X-CSRFToken': csrftoken,
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const searchResults = document.querySelector("#search-results .cards");
+            searchResults.innerHTML = '';  // Clear previous results
+
+            // Render each card with add to wishlist and details button
+            if (data.makanan_list.length > 0) {
+                data.makanan_list.forEach(item => {
+                    const cardHtml = `
+                        <div class="card relative">
+                            <img src="${item.gambar}" alt="${item.nama}" class="object-cover w-full h-48">
+
+                            <!-- Wishlist and Detail Buttons -->
+                            <div class="absolute top-4 right-2 flex space-x-2">
+                                <button 
+                                    onclick="addToWishlist(${item.id})"
+                                    class="relative flex w-8 h-8 justify-center items-center bg-white text-orange-500 hover:bg-gray-200 focus:ring-4 focus:outline-none focus:ring-orange-300 font-medium rounded-lg text-sm text-center">
+                                    <svg id="heart-icon-${item.id}" fill="#FFA500" class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                    </svg>
+                                </button>
+
+                                <!-- Updated Details Button for Redirect -->
+                                <button 
+                                    onclick="redirectToDetails(${item.id})"
+                                    class="relative flex w-8 h-8 justify-center items-center bg-white text-white hover:bg-gray-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 text-center">
+                                    <svg fill="#000000" class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-10 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- Card Content -->
+                            <div class="card-body p-4">
+                                <h3 class="text-lg font-semibold">${item.nama}</h3>
+                                <p class="price font-bold mt-2">Harga: Rp ${item.harga}</p>
+                                <p class="restoran">Restoran: ${item.restoran}</p>
+                                <p>Rating: ${item.rating} / 5</p>
+                            </div>
+                        </div>
+                    `;
+                    searchResults.insertAdjacentHTML('beforeend', cardHtml);
+                });
+
+                // Update pagination buttons
+                const pagination = document.querySelector(".pagination");
+                pagination.innerHTML = '';
+
+                if (data.previous_page) {
+                    pagination.insertAdjacentHTML('beforeend', 
+                        `<a href="#" onclick="loadPage(${data.previous_page}); return false;" class="pagination-btn">Previous</a>`);
+                }
+                if (data.next_page) {
+                    pagination.insertAdjacentHTML('beforeend', 
+                        `<a href="#" onclick="loadPage(${data.next_page}); return false;" class="pagination-btn">Next</a>`);
+                }
+            } else {
+                searchResults.innerHTML = '<p>No results found.</p>';
+            }
+        })
+        .catch(error => {
+            console.error("Error fetching pagination results:", error);
+            searchResults.innerHTML = '<p>Error loading results.</p>';
+        });
+    }
+
+    // Wishlist Functionality
+    function addToWishlist(foodId) {
+        fetch(`/wishlist/add/${foodId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ food_id: foodId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            const wishlistCounter = document.getElementById('wishlist-counter');
+            if (wishlistCounter && data.wishlist_count !== undefined) {
+                wishlistCounter.textContent = data.wishlist_count;
+            } else {
+                alert('Item added to wishlist!');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to add to wishlist. Please try again.');
+        });
+    }
+
+    // Redirect to the details page based on food_id
+    function redirectToDetails(food_id) {
+        window.location.href = `/details/${food_id}/`;
+    }
+</script>
+
+
+
+
+{% endblock %}

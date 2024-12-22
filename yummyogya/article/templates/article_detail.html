@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+{% include 'navbar.html' %}
+
+<div class="container mx-auto p-5 mt-20">
+    <div class="bg-white p-8 rounded-lg shadow-md">
+        <h1 class="text-3xl font-bold mb-4 text-orange-600">{{ article_entry.title }}</h1>
+        <p class="text-gray-600 text-sm mb-6">Diterbitkan pada {{ article_entry.published_date|date:"d M Y" }}</p>
+        
+        {% if article_entry.image_url %}
+          <img src="{{ article_entry.image_url }}" alt="{{ article_entry.title }}" class="max-w-md h-auto object-cover rounded-lg mb-6 mx-auto">
+        {% else %}
+          <img src="{% static 'images/default-culinary.jpg' %}" alt="{{ article_entry.title }}" class="max-w-md h-auto object-cover rounded-lg mb-6 mx-auto">
+        {% endif %}
+
+        <div class="prose max-w-none">
+            {{ article_entry.content|linebreaks }}
+        </div>
+
+        <div class="mt-8">
+            <a href="{% url 'article:article_list' %}" class="inline-block px-6 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition duration-300">
+                Kembali ke Daftar Artikel
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,31 @@
+<h2>Makanan Khas Jogja</h2>
+
+<!-- Cek apakah ada makanan yang ditemukan -->
+{% if page_obj %}
+    <div class="cards">
+        <!-- Iterasi setiap makanan yang dikirim dari views.py -->
+        {% for item in page_obj %}
+            {% include 'card_info.html' %}
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a href="?q={{ query }}&page={{ page_obj.previous_page_number }}" 
+               onclick="loadPage('{{ page_obj.previous_page_number }}'); return false;">
+                Previous
+            </a>
+        {% endif %}
+        
+        {% if page_obj.has_next %}
+            <a href="?q={{ query }}&page={{ page_obj.next_page_number }}" 
+               onclick="loadPage('{{ page_obj.next_page_number }}'); return false;">
+                See More >
+            </a>
+        {% endif %}
+        {% endif %}
+    
+    </div>
+    
+

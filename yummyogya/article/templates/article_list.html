@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+{% include 'navbar.html' %}
+
+<div class="container mx-auto p-5 mt-20">
+    <h1 class="text-3xl font-bold mb-5 text-center text-orange-600">Artikel Anda</h1>
+    <div id="articles-container" class="space-y-5">
+        {% if article_entries %}
+            {% for article_entry in article_entries %}
+                <article class="bg-white p-5 rounded-lg shadow-md flex items-start justify-between">
+                    <div class="flex items-start">
+                        {% if article_entry.image_url %}
+                            <img src="{{ article_entry.image_url }}" alt="{{ article_entry.title }}" class="w-32 h-32 object-cover rounded-lg mr-5">
+                        {% else %}
+                            <img src="{% static 'images/default-culinary.jpg' %}" alt="{{ article_entry.title }}" class="w-32 h-32 object-cover rounded-lg mr-5">
+                        {% endif %}
+                        <div>
+                            <h2 class="text-2xl font-bold">{{ article_entry.title }}</h2>
+                            <p class="text-gray-600 text-sm mb-2">Diterbitkan pada {{ article_entry.published_date|date:"d M Y" }}</p>
+                            <p class="text-gray-800 mb-2">{{ article_entry.content|truncatewords:30 }}</p>
+                            <a href="{% url 'article:article_detail' article_entry.id %}" class="text-orange-600 font-semibold">Baca Selengkapnya</a>
+                        </div>
+                    </div>
+                    {% if user == article_entry.user %}
+                        <div class="flex flex-col items-center ml-4">
+                            <a href="{% url 'article:edit_article' article_entry.id %}" class="text-blue-500 hover:text-blue-700 mb-2 text-2xl">
+                                &#9998;
+                            </a>
+                            <a href="{% url 'article:delete_article' article_entry.id %}" class="text-red-500 hover:text-red-700 text-2xl">
+                                &#128465;
+                            </a>
+                        </div>
+                    {% endif %}
+                </article>
+            {% endfor %}
+        {% else %}
+            <p class="text-center text-gray-600">Belum ada artikel yang Anda buat.</p>
+        {% endif %}
+    </div>
+    <br>
+    {% if user.is_authenticated %}
+        <div class="bg-white p-5 rounded-lg shadow-md mb-5">
+            <h2 class="text-2xl font-bold mb-4">Tambah Artikel Baru</h2>
+            <form id="article-form">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label for="title" class="block text-gray-700 font-semibold mb-2">Judul</label>
+                    <input type="text" id="title" name="title" class="w-full p-2 border border-gray-300 rounded" required>
+                </div>
+                <div class="mb-4">
+                    <label for="content" class="block text-gray-700 font-semibold mb-2">Konten</label>
+                    <textarea id="content" name="content" rows="5" class="w-full p-2 border border-gray-300 rounded" required></textarea>
+                </div>
+                <div class="mb-4">
+                    <label for="image_url" class="block text-gray-700 font-semibold mb-2">URL Gambar (opsional)</label>
+                    <input type="url" id="image_url" name="image_url" class="w-full p-2 border border-gray-300 rounded">
+                </div>
+                <button type="submit" class="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 transition duration-300">
+                    Tambah Artikel
+                </button>
+                <div id="success-message" class="bg-green-100 text-green-800 p-4 rounded mb-4 hidden">
+                    Artikel berhasil ditambahkan!
+                </div>
+            </form>
+        </div>
+    {% endif %}
+</div>
+<script>
+    // Fungsi untuk mendapatkan CSRF token dari cookie
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const trimmedCookie = cookie.trim();
+                if (trimmedCookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(trimmedCookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    // Event listener untuk form submit
+    document.getElementById('article-form').addEventListener('submit', function(event) {
+        event.preventDefault(); // Mencegah form submit default
+
+        // Ambil data dari form
+        const title = document.getElementById('title').value;
+        const content = document.getElementById('content').value;
+        const image_url = document.getElementById('image_url').value;
+
+        // Siapkan data untuk dikirim
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('content', content);
+        formData.append('image_url', image_url);
+
+        // Kirim data menggunakan fetch
+        fetch("{% url 'article:create_article_ajax' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrftoken,
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            credentials: 'same-origin',
+            body: formData,
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.article) {
+                const articleData = JSON.parse(data.article)[0];
+                const article = articleData.fields;
+
+                // Dapatkan tanggal publikasi dalam format yang sesuai
+                const publishedDate = new Date(article.published_date).toLocaleDateString('id-ID', {
+                    day: 'numeric', month: 'long', year: 'numeric'
+                });
+
+                // Buat URL detail artikel
+                const articleDetailURL = `/article/${articleData.pk}/`;
+
+                // Buat URL edit artikel
+                const articleEditURL = `/article/edit/${articleData.pk}/`;
+
+                // Buat URL delete artikel
+                const articleDeleteURL = `/article/delete/${articleData.pk}/`;
+
+                // Buat elemen artikel baru
+                const articleHTML = `
+                <article class="bg-white p-5 rounded-lg shadow-md flex items-start justify-between">
+                    <div class="flex items-start">
+                        ${article.image_url ? `
+                        <img src="${article.image_url}" alt="${article.title}" class="w-32 h-32 object-cover rounded-lg mr-5">
+                        ` : `
+                        <img src="{% static 'images/default-culinary.jpg' %}" alt="${article.title}" class="w-32 h-32 object-cover rounded-lg mr-5">
+                        `}
+                        <div>
+                            <h2 class="text-2xl font-bold">${article.title}</h2>
+                            <p class="text-gray-600 text-sm mb-2">Diterbitkan pada ${publishedDate}</p>
+                            <p class="text-gray-800 mb-2">${article.content}</p>
+                            <a href="${articleDetailURL}" class="text-orange-600 font-semibold">Baca Selengkapnya</a>
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-center ml-4">
+                        <a href="${articleEditURL}" class="text-blue-500 hover:text-blue-700 mb-2 text-2xl">
+                            &#9998; <!-- Ikon pensil untuk Edit -->
+                        </a>
+                        <a href="${articleDeleteURL}" class="text-red-500 hover:text-red-700 text-2xl">
+                            &#128465; <!-- Ikon tempat sampah untuk Delete -->
+                        </a>
+                    </div>
+                </article>
+                `;
+
+                // Tambahkan artikel baru ke dalam container
+                const articlesContainer = document.getElementById('articles-container');
+                articlesContainer.insertAdjacentHTML('afterbegin', articleHTML);
+
+                // Tampilkan pesan sukses
+                const successMessage = document.getElementById('success-message');
+                successMessage.classList.remove('hidden');
+
+                // Sembunyikan pesan sukses setelah beberapa detik
+                setTimeout(() => {
+                    successMessage.classList.add('hidden');
+                }, 3000);
+
+                // Reset form
+                document.getElementById('article-form').reset();
+            } else {
+                alert('Gagal menambah artikel. Silakan coba lagi.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan. Silakan coba lagi.');
+        });
+    });
+</script>
+{% endblock content %}

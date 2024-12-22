@@ -1,0 +1,100 @@
+<div class="card relative">
+    <!-- Gambar makanan -->
+    <img src="{{ item.gambar }}" alt="{{ item.nama }}" class="object-cover w-full h-48">
+
+    <!-- Tombol Add to Wishlist dan Detail -->
+    <div class="absolute top-4 right-2 flex space-x-2">
+        <!-- Tombol Wishlist -->
+        <button 
+            onclick="addToWishlist('{{ item.id }}')"
+            class="relative flex w-8 h-8 justify-center items-center bg-white text-orange-500 hover:bg-gray-200 focus:ring-4 focus:outline-none focus:ring-orange-300 font-medium rounded-lg text-sm text-center dark:bg-white dark:hover:bg-gray-300 dark:focus:ring-orange-800">
+            <svg id="heart-icon-{{ item.id }}" fill="#FFA500" class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            </svg>
+        </button>
+
+        <!-- Tombol Detail -->
+        <a href="{% url 'details:food_detail' item.id %}" 
+            class="relative flex w-8 h-8 justify-center items-center bg-cover bg-center hover:bg-gray-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm text-center dark:hover:bg-gray-600 dark:focus:ring-blue-800"
+            style="background-image: url('https://static.vecteezy.com/system/resources/previews/004/820/899/non_2x/product-details-icon-design-symbol-price-transaction-invoice-paper-document-for-ecommerce-free-vector.jpg');">
+        </a>
+
+
+    </div>
+
+    <!-- Konten Card -->
+    <div class="card-body p-4">
+        <h3 class="text-lg font-semibold">{{ item.nama }}</h3>
+        <p class="price font-bold mt-2">Harga: Rp {{ item.harga }}</p>
+        <p class="restoran">Restoran: {{ item.restoran }}</p>
+        <p>Rating: {{ item.rating }} / 5</p>
+    </div>
+
+    <!-- Modal Detail -->
+    <div id="details-modal-{{ item.id }}" class="modal hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full relative">
+            <button onclick="hideDetails('{{ item.id }}')" class="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl font-bold">×</button>
+            <h2 class="text-2xl font-bold mb-4">{{ item.nama }}</h2>
+            <img src="{{ item.gambar }}" alt="{{ item.nama }}" class="w-full h-48 object-cover mb-4">
+            <p class="mb-4">{{ item.deskripsi }}</p>
+            <p class="font-bold">Harga: Rp {{ item.harga }}</p>
+            <p>Restoran: {{ item.restoran }}</p>
+            <p>Rating: {{ item.rating }} / 5</p>
+        </div>
+    </div>
+</div>
+
+<script>
+function getCsrfToken() {
+    const cookieValue = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken'))
+        ?.split('=')[1];
+    return cookieValue;
+}
+
+function addToWishlist(foodId) {
+    fetch(`/wishlist/add/${foodId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCsrfToken(),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ food_id: foodId })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        const wishlistCounter = document.getElementById('wishlist-counter');
+        if (wishlistCounter && data.wishlist_count !== undefined) {
+            wishlistCounter.textContent = data.wishlist_count;
+        } else {
+            alert('Item added to wishlist!');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to add to wishlist. Please try again.');
+    });
+}
+
+// Show details modal
+function showDetails(id) {
+    document.getElementById(`details-modal-${id}`).classList.remove('hidden');
+}
+
+// Hide details modal
+function hideDetails(id) {
+    document.getElementById(`details-modal-${id}`).classList.add('hidden');
+}
+</script>
+
+<style>
+.modal {
+    display: none;
+}
+</style>

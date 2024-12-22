@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block meta %}
+<title>Login</title>
+{% endblock meta %}
+
+{% block content %}
+<header class="bg-orange-600 shadow-lg text-center text-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-center items-center h-16">
+            <!-- Nama website -->
+            <a href="/" class="text-white text-2xl font-bold">Yummyogya</a>           
+        </div>
+    </div>
+</header>
+
+<div style="max-width: 700px; margin: 180px auto 238px auto;">
+    <!-- Form Login Section -->
+    <div style="background-color: #fff; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); margin-top: 20px;">
+        <h2 style="text-align: center; font-size: 2em; font-weight: bold; color: #333;">Login</h2>
+
+        <form method="POST" action="" style="display: flex; flex-direction: column;">
+            {% csrf_token %}
+            <div style="margin-bottom: 15px;">
+                <label for="username" style="font-weight: bold; display: block; margin-bottom: 5px;">Username:</label>
+                <input id="username" name="username" type="text" required style="padding: 10px; width: 100%; border: 1px solid #ccc; border-radius: 5px;" placeholder="Username">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label for="password" style="font-weight: bold; display: block; margin-bottom: 5px;">Password:</label>
+                <input id="password" name="password" type="password" required style="padding: 10px; width: 100%; border: 1px solid #ccc; border-radius: 5px;" placeholder="Password">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <button type="submit" name="submit" style="padding: 10px 15px; font-size: 16px; background-color: #ea580c; color: white; border: none; border-radius: 5px; cursor: pointer; width: 100%;">Login</button>
+            </div>
+        </form>
+
+        <!-- Tampilkan Pesan -->
+        {% if messages %}
+        <ul style="margin-top: 10px; list-style: none; padding-left: 0;">
+            {% for message in messages %}
+                {% if message.tags == 'success' %}
+                    <li style="color: blue;">
+                        {{ message }}
+                    </li>
+                {% else %}
+                    <li style="color: red;">
+                        {{ message }}
+                    </li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        <!-- Link ke Register -->
+        <div style="text-align: center; margin-top: 20px;">
+            <p style="font-size: 14px; color: #666;">Belum punya akun?
+                <a href="{% url 'authentication:register' %}" style="font-weight: bold; color: #4CAF50; text-decoration: none;">Register di sini</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<footer class="bg-orange-600 text-white text-center py-3">
+    <p>&copy; 2024 Yummyogya. Semua hak dilindungi undang-undang.</p>
+</footer>
+{% endblock content %}

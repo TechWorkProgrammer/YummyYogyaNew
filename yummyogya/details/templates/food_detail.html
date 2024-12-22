@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% block content %}
+{% include 'navbar.html' %}
+
+
+<div class="container mx-auto p-4 lg:p-8">
+    <div class="bg-white rounded-lg shadow-lg mt-20 w-full lg:flex lg:flex-row p-6">
+        <!-- Gambar dan Info Utama -->
+        <div class="lg:w-1/2 mb-6 lg:mb-0 lg:pr-4 relative">
+            <img src="{{ item.gambar }}" alt="{{ item.nama }}" class="w-full rounded-lg">
+            <!-- Tombol Add to Wishlist -->
+            <button 
+                onclick="addToWishlist('{{ item.id }}')"
+                class="absolute top-2 right-6 flex w-8 h-8 justify-center items-center bg-white text-orange-500 hover:bg-gray-200 focus:ring-4 focus:outline-none focus:ring-orange-300 font-medium rounded-lg text-sm text-center">
+                <svg id="heart-icon-{{ item.id }}" fill="#FFA500" class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Detail Makanan dan Form Ulasan -->
+        <div class="lg:w-1/2 space-y-4">
+            <h1 class="text-2xl text-orange-500 font-semibold">{{ item.nama }}</h1>
+            <p class="text-gray-700">Deskripsi: {{ item.deskripsi }}</p>
+            <p class="text-gray-700">Harga: Rp {{ item.harga }}</p>
+            <p class="text-gray-700">Restoran: {{ item.restoran }}</p>
+            <p class="text-gray-700">Rating: {{ item.rating }} / 5</p>
+
+            <!-- Form untuk menambahkan ulasan -->
+            <h2 class="text-orange-500 font-semibold mt-6 mb-2">Ulasan</h2>
+            <form id="review-form" class="space-y-4">
+                <div id="rating-stars" class="flex space-x-2 text-gray-300 text-2xl cursor-pointer">
+                    {% for i in "12345" %}
+                        <span onclick="setRating({{ forloop.counter }})" onmouseover="highlightStars({{ forloop.counter }})" onmouseout="resetStars()">&#9733;</span>
+                    {% endfor %}
+                </div>
+                <textarea id="review" name="review" placeholder="Tulis ulasan di sini..." required class="w-full p-2 border border-gray-300 rounded-lg resize-y"></textarea>
+                <input type="hidden" id="rating" name="rating" value="0">
+                <button type="button" onclick="submitReview({{ item.id }})" class="bg-orange-500 text-white py-2 px-6 rounded-full hover:bg-orange-600 transition duration-300">Kirim Ulasan</button>
+            </form>
+
+            <!-- Menampilkan Ulasan -->
+            <h3 class="text-orange-500 font-semibold mt-6">Ulasan Pengguna:</h3>
+            <div class="max-h-60 overflow-y-auto border border-gray-300 rounded-lg p-4">
+                {% if reviews %}
+                    <div class="space-y-4">
+                        {% for review in reviews %}
+                            <div class="p-2 bg-gray-100 rounded-lg border-l-4 border-orange-500">
+                                <p class="font-bold">{{ review.user.username }} rated: {{ review.rating }} / 5</p>
+                                <p>{{ review.review }}</p>
+                                <p class="text-gray-500 text-sm">{{ review.created_at|date:"Y-m-d H:i" }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-gray-700">Tidak ada ulasan untuk makanan ini.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-orange-600 text-white text-center py-3 mt-8">
+        <p>&copy; 2024 Yummyogya. Semua hak dilindungi undang-undang.</p>
+    </footer>
+</div>
+
+<script>
+let selectedRating = 0;
+
+function setRating(rating) {
+    selectedRating = rating;
+    document.getElementById('rating').value = rating;
+    highlightStars(rating);
+}
+
+function highlightStars(rating) {
+    const stars = document.getElementById('rating-stars').children;
+    for (let i = 0; i < stars.length; i++) {
+        stars[i].style.color = i < rating ? '#FF6600' : '#d1d5db';
+    }
+}
+
+function resetStars() {
+    highlightStars(selectedRating);
+}
+
+function submitReview(foodId) {
+    const rating = document.getElementById('rating').value;
+    const reviewText = document.getElementById('review').value;
+    const csrfToken = getCsrfToken();
+
+    fetch('/details/add_review/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ rating: rating, review: reviewText, food_id: foodId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+function getCsrfToken() {
+    const cookieValue = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken'))
+        ?.split('=')[1];
+    return cookieValue;
+}
+
+function addToWishlist(foodId) {
+    fetch(`/wishlist/add/${foodId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCsrfToken(),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ food_id: foodId })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        const wishlistCounter = document.getElementById('wishlist-counter');
+        if (wishlistCounter && data.wishlist_count !== undefined) {
+            wishlistCounter.textContent = data.wishlist_count;
+        } else {
+            alert('Item added to wishlist!');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to add to wishlist. Please try again.');
+    });
+}
+</script>
+
+{% endblock content %}
