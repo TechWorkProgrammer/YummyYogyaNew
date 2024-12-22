@@ -83,7 +83,7 @@ class ProfileScreenState extends State<ProfileScreen> {
         title: Text(
           profileData.isNotEmpty
               ? 'Profile ${profileData['username']}'
-              : 'Gagal Mendapatkan Data Pengguna',
+              : 'Mencari data pengguna...',
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,

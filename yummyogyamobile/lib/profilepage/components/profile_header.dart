@@ -39,6 +39,30 @@ class ProfileHeader extends StatelessWidget {
           ),
           textAlign: TextAlign.center,
         ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.calendar_today, color: Colors.orange, size: 16),
+            const SizedBox(width: 4),
+            Text(
+              'Bergabung Sejak: ${profileData['date_joined'] ?? 'Tidak diketahui'}',
+              style: const TextStyle(fontSize: 14, color: Colors.black54),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.access_time, color: Colors.orange, size: 16),
+            const SizedBox(width: 4),
+            Text(
+              'Terakhir Login: ${profileData['last_login'] ?? 'Tidak diketahui'}',
+              style: const TextStyle(fontSize: 14, color: Colors.black54),
+            ),
+          ],
+        ),
         const SizedBox(height: 24),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
