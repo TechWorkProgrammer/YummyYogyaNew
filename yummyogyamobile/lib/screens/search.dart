@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:yummyogya_mobile/models/makanan_entry.dart';
-import 'package:yummyogya_mobile/detail/detail_makanan.dart';
+import 'package:yummyogya_mobile/detail/screens/detail_makanan.dart';
 import 'package:yummyogya_mobile/screens/menu.dart';
 import 'package:yummyogya_mobile/widgets/left_drawer.dart';
 import 'package:yummyogya_mobile/widgets/bottom_nav.dart';

@@ -1,19 +1,28 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:yummyogya_mobile/profilepage/components/profile_header.dart';
+import 'package:yummyogya_mobile/profilepage/components/review_list.dart';
+import 'package:yummyogya_mobile/profilepage/components/wishlist_list.dart';
+import 'package:yummyogya_mobile/widgets/bottom_nav.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String username;
 
-  const ProfileScreen({Key? key, required this.username}) : super(key: key);
+  const ProfileScreen({super.key, required this.username});
 
   @override
-  _ProfileScreenState createState() => _ProfileScreenState();
+  ProfileScreenState createState() => ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class ProfileScreenState extends State<ProfileScreen> {
   Map<String, dynamic> profileData = {};
   bool isLoading = true;
+  String searchQuery = '';
+  final int _currentIndex = 3;
+  String filter = 'all';
+  final String baseUrl = 'http://192.168.1.10:8000';
 
   @override
   void initState() {
@@ -26,23 +35,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
       isLoading = true;
     });
 
-    final response = await http.get(
-      Uri.parse(
-          'http://127.0.0.1:8000/profile/api/?username=${widget.username}'),
-    );
+    try {
+      final response = await http.get(
+        Uri.parse(
+            '$baseUrl/profilepage/profile/api/?username=${widget.username}'),
+      );
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      setState(() {
-        profileData = data;
-        isLoading = false;
-      });
-    } else {
-      setState(() {
-        isLoading = false;
-        print('Failed to load profile data');
-      });
-      // Handle error (e.g., show a message)
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          profileData = data['data'];
+          isLoading = false;
+        });
+      } else {
+        showError('Gagal memuat data profil.');
+      }
+    } catch (error) {
+      showError('Terjadi kesalahan: $error');
+    }
+  }
+
+  void showError(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  void _navigateToPage(int index) {
+    final routes = [
+      () => Navigator.pushNamed(context, '/home'),
+      () => Navigator.pushNamed(context, '/search'),
+      () => Navigator.pushNamed(context, '/wishlist'),
+      () => Navigator.pushNamed(context, '/profile'),
+    ];
+
+    if (index != _currentIndex) {
+      routes[index]();
     }
   }
 
@@ -50,214 +80,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: Text(
+          profileData.isNotEmpty
+              ? 'Profile ${profileData['username']}'
+              : 'Gagal Mendapatkan Data Pengguna',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: Colors.orange,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: Colors.orange))
           : SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Profile photo and username
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundImage: profileData['profile_photo'] != null
-                          ? NetworkImage(profileData['profile_photo'])
-                          : const NetworkImage(
-                              'https://via.placeholder.com/150'),
-                    ),
-                    const SizedBox(height: 16),
-                    Text('Username: ${profileData['username']}',
-                        style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    Text('Email: ${profileData['email']}',
-                        style: const TextStyle(fontSize: 16)),
-                    const SizedBox(height: 8),
-                    Text('Joined: ${profileData['date_joined']}',
-                        style: const TextStyle(fontSize: 16)),
-                    const SizedBox(height: 16),
-
-                    // Bio
-                    Text('Bio: ${profileData['bio'] ?? 'No bio available'}',
-                        style: const TextStyle(fontSize: 16)),
-                    const SizedBox(height: 16),
-
-                    // Wishlist Section
-                    const Text('Wishlist',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
-                    ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: profileData['wishlist']?.length ?? 0,
-                      itemBuilder: (context, index) {
-                        var item = profileData['wishlist'][index];
-                        return ListTile(
-                          leading: Image.network(item['image'],
-                              width: 50, height: 50),
-                          title: Text(item['name']),
-                          subtitle: Text('Price: ${item['price']}'),
-                        );
-                      },
-                    ),
-
-                    // Reviews Section
-                    const SizedBox(height: 16),
-                    const Text('Reviews',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
-                    ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: profileData['reviews']?.length ?? 0,
-                      itemBuilder: (context, index) {
-                        var review = profileData['reviews'][index];
-                        return ListTile(
-                          title: Text(review['food_name']),
-                          subtitle: Text(
-                              '${review['rating']} Stars\n${review['review']}'),
-                        );
-                      },
-                    ),
-
-                    // Edit Profile Button - Opens Bottom Sheet
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        _showEditProfileBottomSheet(context);
-                      },
-                      child: const Text('Edit Profile'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange,
-                        // Corrected the parameter to 'backgroundColor'
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 30, vertical: 15),
-                        textStyle: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-    );
-  }
-
-  // Function to show the profile editing form in a BottomSheet
-  void _showEditProfileBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (BuildContext context) {
-        return ProfileEditForm(
-          bio: profileData['bio'] ?? '',
-          username: widget.username,
-          onProfileUpdated: (updatedBio) {
-            setState(() {
-              profileData['bio'] = updatedBio;
-            });
-            Navigator.pop(context); // Close the bottom sheet
-          },
-        );
-      },
-    );
-  }
-}
-
-class ProfileEditForm extends StatefulWidget {
-  final String bio;
-  final String username;
-  final Function(String) onProfileUpdated;
-
-  const ProfileEditForm({
-    Key? key,
-    required this.bio,
-    required this.username,
-    required this.onProfileUpdated,
-  }) : super(key: key);
-
-  @override
-  _ProfileEditFormState createState() => _ProfileEditFormState();
-}
-
-class _ProfileEditFormState extends State<ProfileEditForm> {
-  final _formKey = GlobalKey<FormState>();
-  TextEditingController _bioController = TextEditingController();
-  bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _bioController.text = widget.bio;
-  }
-
-  Future<void> _updateProfile() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
-
-      final response = await http.post(
-        Uri.parse('http://127.0.0.1:8000/profile/update/api/'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'bio': _bioController.text}),
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['success']) {
-          widget.onProfileUpdated(_bioController.text);
-        } else {
-          // Handle failure
-          print('Error updating profile');
-        }
-      } else {
-        // Handle server error
-        print('Failed to update profile');
-      }
-
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Bio input field
-            TextFormField(
-              controller: _bioController,
-              decoration: const InputDecoration(
-                labelText: 'Bio',
-                hintText: 'Update your bio',
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter your bio';
-                }
-                return null;
-              },
-              maxLines: 3,
-            ),
-            const SizedBox(height: 20),
-
-            // Save button
-            _isLoading
-                ? const CircularProgressIndicator()
-                : ElevatedButton(
-                    onPressed: _updateProfile,
-                    child: const Text('Save Changes'),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ProfileHeader(profileData: profileData, baseUrl: baseUrl),
+                  const SizedBox(height: 16),
+                  WishlistList(wishlist: profileData['wishlist'] ?? []),
+                  const SizedBox(height: 16),
+                  ReviewList(
+                    reviews: profileData['reviews'] ?? [],
+                    searchQuery: searchQuery,
+                    filter: filter,
+                    onSearchChanged: (value) => setState(() {
+                      searchQuery = value;
+                    }),
+                    onFilterChanged: (value) => setState(() {
+                      filter = value ?? 'all';
+                    }),
                   ),
-          ],
-        ),
+                ],
+              ),
+            ),
+      bottomNavigationBar: BottomNav(
+        currentIndex: _currentIndex,
+        onTap: (index) => _navigateToPage(index),
       ),
     );
   }

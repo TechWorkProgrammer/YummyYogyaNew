@@ -1,14 +1,19 @@
-from django.shortcuts import render, redirect
+import json
+
+from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
-from .forms import ProfileUpdateForm 
-from django.contrib.auth import update_session_auth_hash
-from wishlist.models import Wishlist, WishlistItem
-from details.models import Review
+from django.contrib.auth.models import User
 from django.http import JsonResponse
-from .models import Profile
+from django.shortcuts import get_object_or_404
+from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
-import json
+
+from details.models import Review
+from wishlist.models import Wishlist, WishlistItem
+from .forms import ProfileUpdateForm
+from .models import Profile
+
 
 # Create your views here.
 
@@ -19,7 +24,7 @@ def show_profile(request):
     wishlist, created = Wishlist.objects.get_or_create(user=user)
     wishlist_items = WishlistItem.objects.filter(wishlist=wishlist)[:3]
     food_items = [item.food for item in wishlist_items]
-    profile, created = Profile.objects.get_or_create(user=user)  
+    profile, created = Profile.objects.get_or_create(user=user)
     last_login = request.COOKIES.get('last_login', 'Not available')
 
     order = request.GET.get('order', 'latest')
@@ -36,6 +41,7 @@ def show_profile(request):
         'last_login': last_login,
     }
     return render(request, 'profile.html', context)
+
 
 @login_required
 def update_profile(request):
@@ -56,59 +62,70 @@ def update_profile(request):
             return JsonResponse({'success': False, 'errors': profile_form.errors})
     return JsonResponse({'success': False, 'error': 'Invalid request'})
 
+
 @login_required
 def change_password(request):
     if request.method == 'POST':
         password_form = PasswordChangeForm(user=request.user, data=request.POST)
         if password_form.is_valid():
             password_form.save()
-            update_session_auth_hash(request, password_form.user)  # Agar pengguna tidak logout setelah mengganti password
+            update_session_auth_hash(request,
+                                     password_form.user)  # Agar pengguna tidak logout setelah mengganti password
             return JsonResponse({'success': True})
         else:
             return JsonResponse({'success': False, 'errors': password_form.errors})
     return JsonResponse({'success': False, 'error': 'Invalid request'})
 
-@login_required
+
+@csrf_exempt
 def get_profile_flutter(request):
-    user = request.user
-    profile = Profile.objects.get(user=user)
-    wishlist_items = Wishlist.objects.filter(user=user).first().food.all()[:3]
-    
-    # Menyusun data wishlist
-    wishlist = [
-        {
-            "id": item.id,
-            "name": item.nama,
-            "price": item.harga,
-            "image": item.gambar.url if item.gambar else None,
-        }
-        for item in wishlist_items
-    ]
+    try:
+        username = request.GET.get('username')
+        if not username:
+            return JsonResponse({"status": "error", "message": "Username is required"}, status=400)
 
-    # Menyusun data review
-    reviews = Review.objects.filter(user=user).order_by('-created_at')
-    review_data = [
-        {
-            "id": review.id,
-            "food_name": review.food.nama if review.food else "Tidak ada",
-            "rating": review.rating,
-            "review": review.review,
-            "date": review.created_at.strftime("%Y-%m-%d"),
-        }
-        for review in reviews
-    ]
+        user = get_object_or_404(User, username=username)
+        profile, _ = Profile.objects.get_or_create(user=user)
 
-    data = {
-        "username": user.username,
-        "email": user.email,
-        "date_joined": user.date_joined.strftime("%Y-%m-%d"),
-        "last_login": request.COOKIES.get('last_login', 'Not available'),
-        "bio": profile.bio,
-        "profile_photo": profile.profile_photo.url if profile.profile_photo else None,
-        "wishlist": wishlist,
-        "reviews": review_data,
-    }
-    return JsonResponse(data, safe=False)
+        wishlist, _ = Wishlist.objects.get_or_create(user=user)
+        wishlist_items = WishlistItem.objects.filter(wishlist=wishlist)[:3]
+        food_items = [
+            {
+                "id": item.food.id,
+                "name": item.food.nama,
+                "price": item.food.harga,
+                "image": item.food.gambar,
+            }
+            for item in wishlist_items
+        ]
+
+        reviews = Review.objects.filter(user=user).order_by('-created_at')[:3]
+        review_data = [
+            {
+                "id": review.id,
+                "food_name": review.food.nama if review.food else "Tidak ada",
+                "rating": review.rating,
+                "review": review.review,
+                "date": review.created_at.strftime("%Y-%m-%d"),
+            }
+            for review in reviews
+        ]
+
+        data = {
+            "username": user.username,
+            "email": user.email,
+            "date_joined": user.date_joined.strftime("%Y-%m-%d"),
+            "last_login": user.last_login.strftime("%Y-%m-%d %H:%M:%S") if user.last_login else "Not available",
+            "bio": profile.bio,
+            "profile_photo": profile.profile_photo.url if profile.profile_photo else None,
+            "wishlist": food_items,
+            "reviews": review_data,
+        }
+
+        return JsonResponse({"status": "success", "data": data}, safe=False)
+    except Exception as e:
+        return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
 
 @csrf_exempt
 @login_required
@@ -131,6 +148,7 @@ def update_profile_flutter(request):
         return JsonResponse({"success": True, "message": "Profile updated successfully."})
 
     return JsonResponse({"success": False, "message": "Invalid request method."})
+
 
 @csrf_exempt
 @login_required
