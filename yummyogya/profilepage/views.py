@@ -128,46 +128,73 @@ def get_profile_flutter(request):
 
 
 @csrf_exempt
-@login_required
 def update_profile_flutter(request):
-    if request.method == 'POST':
-        profile = Profile.objects.get(user=request.user)
-        data = json.loads(request.body)
+    try:
+        if request.method != 'POST':
+            return JsonResponse({"success": False, "message": "Invalid request method."}, status=400)
 
-        bio = data.get('bio', None)
-        delete_photo = data.get('delete_photo', False)
+        data = request.POST
+        user_username = data.get('username')
+        if not user_username:
+            return JsonResponse({"success": False, "message": "Username is required."}, status=400)
 
-        if bio is not None:
-            profile.bio = bio
+        user = get_object_or_404(User, username=user_username)
+        profile, _ = Profile.objects.get_or_create(user=user)
 
-        if delete_photo:
-            profile.profile_photo.delete()
+        profile_form = ProfileUpdateForm(request.POST, request.FILES, instance=profile)
 
-        profile.save()
+        if profile_form.is_valid():
+            new_bio = data.get('bio', None)
+            if new_bio is not None:
+                profile.bio = new_bio
 
-        return JsonResponse({"success": True, "message": "Profile updated successfully."})
+            delete_photo = data.get('delete_photo', 'false').lower() == 'true'
+            if delete_photo and profile.profile_photo:
+                profile.profile_photo.delete()
 
-    return JsonResponse({"success": False, "message": "Invalid request method."})
+            profile_form.save()
+
+            return JsonResponse({"success": True, "message": "Profile updated successfully."})
+        else:
+            return JsonResponse({"success": False, "errors": profile_form.errors}, status=400)
+
+    except Exception as e:
+        return JsonResponse({"success": False, "message": f"An error occurred: {str(e)}"}, status=500)
 
 
 @csrf_exempt
-@login_required
 def change_password_flutter(request):
-    if request.method == 'POST':
+    try:
+        if request.method != 'POST':
+            return JsonResponse({"success": False, "message": "Invalid request method."}, status=400)
+
         data = json.loads(request.body)
+        username = data.get('username')
         old_password = data.get('old_password')
         new_password1 = data.get('new_password1')
         new_password2 = data.get('new_password2')
 
-        if new_password1 != new_password2:
-            return JsonResponse({"success": False, "message": "Passwords do not match."})
+        if not username:
+            return JsonResponse({"success": False, "message": "Username is required."}, status=400)
 
-        user = request.user
+        if not old_password or not new_password1 or not new_password2:
+            return JsonResponse({"success": False, "message": "All password fields are required."}, status=400)
+
+        if new_password1 != new_password2:
+            return JsonResponse({"success": False, "message": "Passwords do not match."}, status=400)
+
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return JsonResponse({"success": False, "message": "User not found."}, status=404)
+
         if not user.check_password(old_password):
-            return JsonResponse({"success": False, "message": "Old password is incorrect."})
+            return JsonResponse({"success": False, "message": "Old password is incorrect."}, status=400)
 
         user.set_password(new_password1)
         user.save()
+
         return JsonResponse({"success": True, "message": "Password changed successfully."})
 
-    return JsonResponse({"success": False, "message": "Invalid request method."})
+    except Exception as e:
+        return JsonResponse({"success": False, "message": f"An error occurred: {str(e)}"}, status=500)

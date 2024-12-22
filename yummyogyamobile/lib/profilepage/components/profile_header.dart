@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:yummyogya_mobile/profilepage/components/profile_edit_modal.dart';
+import 'package:yummyogya_mobile/profilepage/components/change_password_modal.dart';
 
 class ProfileHeader extends StatelessWidget {
   final Map<String, dynamic> profileData;
@@ -9,6 +11,42 @@ class ProfileHeader extends StatelessWidget {
     required this.profileData,
     required this.baseUrl,
   });
+
+  void _openEditProfileModal(BuildContext context) async {
+    final result = await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => ProfileEditModal(
+        baseUrl: baseUrl,
+        username: profileData['username'],
+        currentBio: profileData['bio'] ?? '',
+        currentProfilePhoto: profileData['profile_photo'] ?? '',
+      ),
+    );
+
+    if (result == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profil berhasil diperbarui!')),
+      );
+    }
+  }
+
+  void _openChangePasswordModal(BuildContext context) async {
+    final result = await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => ChangePasswordModal(
+        baseUrl: baseUrl,
+        username: profileData['username'],
+      ),
+    );
+
+    if (result == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password berhasil diubah!')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +106,7 @@ class ProfileHeader extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: () => _openEditProfileModal(context),
               icon: const Icon(Icons.edit, color: Colors.white),
               label: const Text(
                 'Edit Profile',
@@ -90,10 +128,10 @@ class ProfileHeader extends StatelessWidget {
               ),
             ),
             ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: () => _openChangePasswordModal(context),
               icon: const Icon(Icons.lock, color: Colors.white),
               label: const Text(
-                'Edit Password',
+                'Change Password',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
